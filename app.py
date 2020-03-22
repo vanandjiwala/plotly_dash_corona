@@ -13,16 +13,43 @@ df = pd.read_csv('./Data/covid19_1.csv')
 df = df[df['Name of State / UT'] != 'Total number of confirmed cases in India']
 states = df['Name of State / UT'].unique()
 
+#preparing states list for dropdown filter
 state_options = []
 for state in states:
     state_options.append({'label':state, 'value': state})
 
-#print(df)
-#print(df.columns)
-
 
 app = dash.Dash(__name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}])
 app.title = 'My Title'
+
+#Setup static chart
+def setup_india_chart(dataframe):
+    df = dataframe
+    data = []
+    for cat in df.columns[3:5]:
+        print(cat)
+        data.append(
+            go.Bar(
+                x=df['Name of State / UT'],
+                y=df[cat],
+                name=cat,
+                textangle=45
+            )
+        )
+
+    india_fig = {
+        'data': data,
+        'layout': go.Layout(
+            xaxis={'type': '-', 'title': 'State'},
+            yaxis={'title': 'Case Count'},
+            barmode='stack',
+            margin={'t': 35}
+        )
+    }
+
+    return india_fig
+
+india_chart = setup_india_chart(df)
 
 
 app.layout = html.Div(
@@ -105,12 +132,12 @@ app.layout = html.Div(
         ],className="row flex-display"),#End of stat cards and filter
         html.Div([
             html.Div(
-                [dcc.Graph(id="india_graph")],
-                className="pretty_container six columns",
+                [dcc.Graph(id="india_graph",figure=india_chart)],
+                className="pretty_container seven columns",
             ),
             html.Div(
                 [dcc.Graph(id="world_graph")],
-                className="pretty_container six columns",
+                className="pretty_container five columns",
             )
         ],className="row flex-display")
     ],
@@ -120,7 +147,14 @@ app.layout = html.Div(
 
 
 
-@app.callback([Output('totalLocalCasesText','children'),Output('totalForeignCasesText','children'),Output('totalCuredCasesText','children'),Output('totalDeathCasesText','children')],
+
+
+
+
+@app.callback([Output('totalLocalCasesText','children'),
+               Output('totalForeignCasesText','children'),
+               Output('totalCuredCasesText','children'),
+               Output('totalDeathCasesText','children')],
               [Input('state-picker','value')])
 def update_stats(state_name):
     result = []
@@ -129,6 +163,7 @@ def update_stats(state_name):
         result.append(df['Total Confirmed cases ( Foreign National )'].apply(pd.to_numeric).sum())
         result.append(df['Cured/Discharged/Migrated'].apply(pd.to_numeric).sum())
         result.append(df['Death'].apply(pd.to_numeric).sum())
+        print(result)
         return result
     else:
         print("value selected {}".format(state_name))
