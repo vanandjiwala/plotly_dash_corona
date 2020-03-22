@@ -7,8 +7,16 @@ import plotly.offline as pyo
 import pandas as pd
 
 # load and prepare data
+#State wise chart data source
 country_list = [{'label': 'globe', 'value': 'globe'},{'label': 'india', 'value': 'india'}]
 df = pd.read_csv('./Data/covid19_1.csv')
+
+#timeseries chart data source
+df_timeseries = pd.read_csv('./Data/covid_19_india_1.csv')
+df_timeseries['Date']= pd.to_datetime(df_timeseries['Date'], format='%d/%m/%y')
+df_timeseries = df_timeseries.groupby(['Date']).sum().reset_index()
+
+
 #Get rid of row containing total of columns
 df = df[df['Name of State / UT'] != 'Total number of confirmed cases in India']
 states = df['Name of State / UT'].unique()
@@ -50,6 +58,41 @@ def setup_india_chart(dataframe):
     return india_fig
 
 india_chart = setup_india_chart(df)
+
+#Setup timeseries chart
+def setup_india_timeseries_chart(dataframe):
+    #df_temp = dataframe
+    data = [go.Scatter(
+        x=dataframe['Date'],
+        y=dataframe['ConfirmedIndianNational'],
+        mode='lines',
+        name='National Trend'
+    ),
+    go.Scatter(
+        x=dataframe['Date'],
+        y=dataframe['ConfirmedForeignNational'],
+        mode='lines',
+        name='Foreign Trend'
+    ),
+    go.Scatter(
+        x=dataframe['Date'],
+        y=dataframe['Cured'],
+        mode='lines',
+        name='Cured Trend'
+    ),
+    go.Scatter(
+        x=dataframe['Date'],
+        y=dataframe['Deaths'],
+        mode='lines',
+        name='Death Trend'
+    )]
+
+    fig = {'data': data}
+
+    return fig
+
+india_timeseries_progress = setup_india_timeseries_chart(df_timeseries)
+
 
 
 app.layout = html.Div(
@@ -136,7 +179,7 @@ app.layout = html.Div(
                 className="pretty_container seven columns",
             ),
             html.Div(
-                [dcc.Graph(id="world_graph")],
+                [dcc.Graph(id="india_trend_graph",figure=india_timeseries_progress)],
                 className="pretty_container five columns",
             )
         ],className="row flex-display")
