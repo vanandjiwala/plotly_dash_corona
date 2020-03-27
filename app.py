@@ -17,16 +17,21 @@ df_timeseries['Date']= pd.to_datetime(df_timeseries['Date'], format='%d/%m/%y')
 df_timeseries = df_timeseries.groupby(['Date']).sum().reset_index()
 
 #world data source
-
 df_world_input = pd.read_csv('./Data/time-series-19-covid-combined_csv.csv')
+df_world_input.drop(columns=['Lat','Long','Province/State'],inplace=True)
+df_world_input.fillna(0, inplace=True)
+df_world_input['Date'] = pd.to_datetime(df_world_input['Date'])
+df_world_input['Confirmed'] = df_world_input['Confirmed'].astype(int)
+df_world_input['Recovered'] = df_world_input['Recovered'].astype(int)
+df_world_input['Deaths'] = df_world_input['Deaths'].astype(int)
 df_world_summary = pd.DataFrame(columns=df_world_input.columns)
+df_world_10days = pd.DataFrame(columns=df_world_input.columns)
 country_group = df_world_input.groupby('Country/Region')
 for name, group in country_group:
     df_world_summary = df_world_summary.append(group[group['Date'] == group['Date'].max()])
-df_world_summary.fillna(0, inplace=True)
-df_world_summary['Confirmed'] = df_world_summary['Confirmed'].astype(int)
-df_world_summary['Recovered'] = df_world_summary['Recovered'].astype(int)
-df_world_summary['Deaths'] = df_world_summary['Deaths'].astype(int)
+    #TODO: Use different approach.
+    df_world_10days = df_world_10days.append(group.sort_values(by=['Date'], ascending=False).head(10))
+
 df_world_summary = df_world_summary.groupby('Country/Region').sum().reset_index()
 
 
@@ -41,7 +46,7 @@ for state in states:
 
 
 app = dash.Dash(__name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}])
-app.title = 'My Title'
+app.title = 'Covid-19'
 
 #Setup static india chart
 def setup_india_chart(dataframe):
