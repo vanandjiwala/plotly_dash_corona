@@ -16,6 +16,7 @@ df_timeseries = pd.read_csv('./Data/covid_19_india_1.csv')
 df_timeseries['Date']= pd.to_datetime(df_timeseries['Date'], format='%d/%m/%y')
 df_timeseries = df_timeseries.groupby(['Date']).sum().reset_index()
 
+
 #world data source
 df_world_input = pd.read_csv('./Data/time-series-19-covid-combined_csv.csv')
 df_world_input.drop(columns=['Lat','Long','Province/State'],inplace=True)
@@ -25,14 +26,17 @@ df_world_input['Confirmed'] = df_world_input['Confirmed'].astype(int)
 df_world_input['Recovered'] = df_world_input['Recovered'].astype(int)
 df_world_input['Deaths'] = df_world_input['Deaths'].astype(int)
 df_world_summary = pd.DataFrame(columns=df_world_input.columns)
-df_world_10days = pd.DataFrame(columns=df_world_input.columns)
+
 country_group = df_world_input.groupby('Country/Region')
 for name, group in country_group:
     df_world_summary = df_world_summary.append(group[group['Date'] == group['Date'].max()])
-    #TODO: Use different approach.
-    df_world_10days = df_world_10days.append(group.sort_values(by=['Date'], ascending=False).head(10))
 
 df_world_summary = df_world_summary.groupby('Country/Region').sum().reset_index()
+top_10_countries_list = df_world_summary.sort_values(by=['Confirmed'],ascending=False).head(10).reset_index()['Country/Region'].values.tolist()
+
+df_world_timeseries = df_world_input.groupby(['Date','Country/Region']).sum().reset_index()
+df_world_timeseries = df_world_timeseries[df_world_timeseries['Country/Region'].isin(top_10_countries_list)].sort_values(by=['Date'])
+df_world_timeseries.reset_index(inplace=True)
 
 
 #Get rid of row containing total of columns
@@ -65,6 +69,7 @@ def setup_india_chart(dataframe):
     india_fig = {
         'data': data,
         'layout': go.Layout(
+            title='India State Wise Distribution',
             xaxis={'type': '-', 'title': 'State'},
             yaxis={'title': 'Case Count'},
             barmode='stack',
@@ -76,7 +81,8 @@ def setup_india_chart(dataframe):
 
 india_chart = setup_india_chart(df)
 
-#Setup timeseries chart
+
+#Setup timeseries chart India
 def setup_india_timeseries_chart(dataframe):
 
     data = [go.Scatter(
@@ -104,34 +110,47 @@ def setup_india_timeseries_chart(dataframe):
         name='Death Trend'
     )]
 
-    fig = {'data': data}
+    fig = {'data': data,
+           'layout':go.Layout(
+               title = 'Covid-19 Status in India Over Time',
+               xaxis={'title': 'Time'},
+               yaxis={'title': 'Count'},
+           )
+           }
 
     return fig
 
 india_timeseries_progress = setup_india_timeseries_chart(df_timeseries)
 
-#Setup static india chart
+#Setup world time series chart for top 10 affected countries
 def setup_world_chart(dataframe):
 
+    country_groups = dataframe.groupby(['Country/Region'])
     data = []
-    data.append(
-        go.Bar(
-            x=dataframe['Country/Region'],
-            y=dataframe['Confirmed']
+    for name,group in country_groups:
+        print(name)
+        data.append(
+            go.Scatter(
+                x=group['Date'],
+                y=group['Confirmed'],
+                mode='lines',
+                name= name
+            )
         )
-    )
 
     world_fig = {
         'data': data,
         'layout': go.Layout(
-            xaxis={'type': '-', 'title': 'Country'},
+            title='Trend in Top 10 Affected Countries',
+            xaxis={'title': 'Time'},
             yaxis={'title': 'Case Count'}
         )
     }
 
+    #return []
     return world_fig
 
-world_chart = setup_world_chart(df_world_summary)
+world_chart = setup_world_chart(df_world_timeseries)
 
 
 app.layout = html.Div(
@@ -157,7 +176,7 @@ app.layout = html.Div(
                             style={"margin-bottom": "0px"},
                         ),
                         html.H5(
-                            "Covid - 19 Outbreak Visualization", style={"margin-top": "0px"}
+                            "CSV Driven Covid - 19 Outbreak Visualization", style={"margin-top": "0px"}
                         ),
                     ]
                 )
