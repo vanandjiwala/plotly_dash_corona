@@ -13,4 +13,8 @@
 
 
 ##Data Source Update
-If you update any used data source then restart the server/app.py. Make sure to shutdown the older processes properly.  
+If you update any used data source then restart the server/app.py. Make sure to shutdown the older processes properly.
+
+##Screenshots
+![Covid-19-1](https://user-images.githubusercontent.com/21161695/77848797-fb405180-71e4-11ea-9653-ad24e77e4e37.JPG)
+![Covid-19-2](https://user-images.githubusercontent.com/21161695/77848795-fa0f2480-71e4-11ea-969d-538e43f9ede6.JPG)  
